@@ -1,13 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Reactivo</title>
+    <title>Visualizador de Audio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+    
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Oculta cualquier barra de scroll */
+            background-color: #000; /* Fondo negro puro mientras carga */
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            display: block; /* Elimina un espacio extra invisible que los navegadores dejan abajo */
+        }
+    </style>
 </head>
 <body>
-    <script src="./js/p5/p5.min.js"></script>
-    <script src="./js/p5/addons/p5.sound.min.js"></script>
     <script src="./js/bars.js"></script>
 </body>
 </html>
