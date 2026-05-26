@@ -1,0 +1,240 @@
+  :root {
+      --bg-color: #030303;
+      --card-bg: rgba(9, 9, 11, 0.9);
+      --card-border: rgba(39, 39, 42, 0.8);
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent-neon: #00f3ff;
+      --accent-glow: rgba(0, 243, 255, 0.25);
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    /* Reset básico */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================================================
+       2. DISEÑO VISUAL Y COMPONENTES SEMÁNTICOS
+       ========================================================================== */
+    
+    /* Lienzo sobre el que se dibuja el Halftone */
+    #visualizer_canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      display: block;
+    }
+
+    /* Panel de controles flotante con Glassmorphism */
+    .controls-panel {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      width: 360px;
+      max-width: calc(100vw - 48px);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.82);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      user-select: none;
+    }
+
+    header h1 {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    header h1::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--accent-neon);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-neon);
+      animation: pulse 1.8s infinite;
+    }
+
+    header p {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Sección del Reproductor de Audio */
+    .audio-player-box {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .audio-player-box label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    /* Estilo del reproductor de audio nativo integrado en el HTML */
+    audio {
+      width: 100%;
+      height: 32px;
+      outline: none;
+    }
+
+    /* Controles de Sensibilidad y Parámetros */
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .control-number {
+      font-family: var(--font-mono);
+      color: var(--accent-neon);
+    }
+
+    /* Sliders personalizados de corte moderno */
+    input[type="range"] {
+      webkit-appearance: none;
+      width: 100%;
+      background: #1f1f22;
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent-neon);
+      box-shadow: 0 0 6px var(--accent-neon);
+      transition: transform 0.1s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .button-group {
+      display: grid;
+      grid-column: 1fr;
+      margin-top: 6px;
+    }
+
+    .btn {
+      background: var(--accent-neon);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: #00d2dd;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+    }
+
+    /* Modal Instructivo Inicial */
+    .welcome-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+
+    .welcome-card {
+      background: #09090b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 420px;
+      max-width: calc(100vw - 32px);
+      padding: 32px;
+      border-radius: 24px;
+      text-align: center;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+    }
+
+    .welcome-card h2 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .welcome-card p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+  
+    
