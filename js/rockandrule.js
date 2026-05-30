@@ -1,4 +1,6 @@
-// Referencias del DOM
+// ==========================================
+// 1. REFERENCIAS DEL DOM Y CONFIGURACIÓN
+// ==========================================
 const canvas = document.getElementById('visualizer_canvas');
 const ctx = canvas.getContext('2d');
 const welcomeModal = document.getElementById('welcome_modal');
@@ -27,7 +29,9 @@ const settings = {
   glow: 12 
 };
 
-// Clase PerlinNoise Optimizada
+// ==========================================
+// 2. GENERADOR DE RUIDO PERLIN OPTIMIZADO
+// ==========================================
 class PerlinNoise {
   constructor() {
     this.p = new Uint8Array(256);
@@ -61,7 +65,9 @@ class PerlinNoise {
 
 const perlin = new PerlinNoise();
 
-// Actualizar estados reactivamente
+// ==========================================
+// 3. EVENTOS DE INTERFAZ (UI) Y RESIZE
+// ==========================================
 inputSensitivity.addEventListener('input', (e) => {
   settings.sensitivity = parseFloat(e.target.value);
   labelSensitivity.innerText = settings.sensitivity.toFixed(1) + 'x';
@@ -79,7 +85,6 @@ btnReset.addEventListener('click', () => {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
 
-// Redimensionado Dinámico del Canvas
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -89,7 +94,9 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Web Audio API
+// ==========================================
+// 4. CONFIGURACIÓN DEL WEB AUDIO API
+// ==========================================
 let audioCtx, analyser, source, dataArray;
 let isInitialized = false;
 
@@ -115,12 +122,10 @@ function initAudio() {
 btnEnter.addEventListener('click', async () => {
   initAudio();
   
-  // Asegurar que el contexto se despierte
   if (audioCtx && audioCtx.state === 'suspended') {
     await audioCtx.resume();
   }
   
-  // RECONEXIÓN DE SEGURIDAD: Asegura el puente hacia tus altavoces
   analyser.connect(audioCtx.destination);
   
   welcomeModal.style.opacity = 0;
@@ -128,13 +133,14 @@ btnEnter.addEventListener('click', async () => {
     welcomeModal.style.display = 'none';
   }, 400);
   
-  // Reproducir e inspeccionar posibles errores de carga
   musicElement.play()
     .then(() => console.log('Reproducción iniciada correctamente.'))
     .catch(err => console.error('Error crítico al reproducir el archivo MP3:', err));
 });
 
-// Superfórmula 2D
+// ==========================================
+// 5. MATEMÁTICAS Y FUNCIONES AUXILIARES
+// ==========================================
 function superformula(theta, m, n1, n2, n3, a = 1.0, b = 1.0) {
   const part1 = Math.pow(Math.abs(Math.cos((m * theta) / 4) / a), n2);
   const part2 = Math.pow(Math.abs(Math.sin((m * theta) / 4) / b), n3);
@@ -145,10 +151,6 @@ function mapRange(val, inMin, inMax, outMin, outMax) {
   if (inMax === inMin) return outMin;
   return outMin + ((val - inMin) / (inMax - inMin)) * (outMax - outMin);
 }
-
-// Ciclo de Renderización
-let lastTime = 0;
-let runTime = 0;
 
 function getAudioLevels() {
   if (!isInitialized) {
@@ -177,6 +179,12 @@ function getAudioLevels() {
   };
 }
 
+// ==========================================
+// 6. CICLO PRINCIPAL DE RENDERIZADO
+// ==========================================
+let lastTime = 0;
+let runTime = 0;
+
 function render(time) {
   const delta = (time - lastTime) * 0.001;
   lastTime = time;
@@ -188,14 +196,14 @@ function render(time) {
   } else {
     const t = time * 0.0015;
     levels = {
-      bass: (Math.sin(t) + 1) * 0.15 + (Math.cos(t * 0.6) + 1) * 0.12,
-      mid: (Math.cos(t * 1.2) + 1) * 0.12 + (Math.sin(t * 0.4) + 1) * 0.10,
-      treble: (Math.sin(t * 2.0) + 1) * 0.08 + (Math.cos(t * 1.5) + 1) * 0.08,
-      full: 0.15
+      bass: (Math.sin(t) + 1) * 0.15,
+      mid: (Math.cos(t * 1.2) + 1) * 0.12,
+      treble: (Math.sin(t * 2.0) + 1) * 0.08,
+      full: 0.12
     };
-    levels.full = (levels.bass + levels.mid + levels.treble) / 2.5;
   }
 
+  // Modulaciones globales macro
   const bassVal = Math.pow(levels.bass, 0.7) * settings.sensitivity;
   const midVal = Math.pow(levels.mid, 0.7) * settings.sensitivity;
   const trebleVal = Math.pow(levels.treble, 0.7) * settings.sensitivity;
@@ -208,34 +216,55 @@ function render(time) {
   const halfH = canvas.height / 2;
 
   const dynamicScale = settings.scale * (1.1 + Math.pow(bassVal, 1.3) * 0.95 + midVal * 0.45);
-  const rotationOffset = runTime * 0.15 + Math.sin(runTime * 0.4) * midVal * 1.5 + midVal * 1.15;
-  const dynamicM = settings.lobes + Math.sin(runTime * 2.5) * (midVal * 2.8) + (trebleVal * 1.8);
+  const rotationOffset = runTime * 0.15 + Math.sin(runTime * 0.4) * midVal * 1.5;
+  const dynamicM = settings.lobes + Math.sin(runTime * 2.5) * (midVal * 2.8);
 
   const spacing = settings.spacing;
   const noiseScale = 0.012;
   const maxDisplacement = 60;
 
-  if (settings.glow > 0) {
-    ctx.shadowBlur = settings.glow;
-  } else {
-    ctx.shadowBlur = 0;
-  }
+  // Contadores para mapeo espacial de audio
+  const totalColumns = Math.ceil(canvas.width / spacing);
+  const totalRows = Math.ceil(canvas.height / spacing);
+  let colCounter = 0;
 
-  // Bucle de la matriz Halftone
+  // Bucle principal de la matriz Halftone
   for (let x = -spacing; x < canvas.width + spacing; x += spacing) {
+    let rowCounter = 0;
+    colCounter++;
+    
     for (let y = -spacing; y < canvas.height + spacing; y += spacing) {
-      
+      rowCounter++;
+
       const aproxDx = x - halfW;
       const aproxDy = y - halfH;
       const aproxDist = Math.hypot(aproxDx, aproxDy);
       
       if (aproxDist > dynamicScale * 1.6) continue;
 
+      // Asignación de frecuencia individual por coordenada espacial
+      let particleAudioSample = 0;
+      let audioIndex = 0;
+
+      if (isInitialized && dataArray) {
+        const particleID = (colCounter * rowCounter) + rowCounter;
+        const totalParticlesEst = totalColumns * totalRows;
+        audioIndex = Math.floor((particleID / totalParticlesEst) * dataArray.length) % dataArray.length;
+        
+        particleAudioSample = (dataArray[audioIndex] / 255) * settings.sensitivity;
+      } else {
+        particleAudioSample = (Math.sin(colCounter * 0.1 + runTime) * Math.cos(rowCounter * 0.1 + runTime) + 1) * 0.3;
+        audioIndex = Math.floor(mapRange(aproxDist, 0, canvas.width, 0, 255)) % 256;
+      }
+      
+      const pAudio = Math.pow(particleAudioSample, 0.8);
+
+      // Desplazamiento orgánico controlado por ruido Perlin y audio frecuencial único
       const flowAngle = perlin.noise2D(x * noiseScale, y * noiseScale + runTime) * Math.PI * 2;
       const shift = perlin.noise2D(x * noiseScale + runTime, y * noiseScale) * maxDisplacement;
 
-      const drawX = x + Math.cos(flowAngle) * shift * (1.0 + fullVal * 3.2 + bassVal * 2.1);
-      const drawY = y + Math.sin(flowAngle) * shift * (1.0 + fullVal * 3.2 + bassVal * 2.1);
+      const drawX = x + Math.cos(flowAngle) * shift * (1.0 + pAudio * 4.5 + bassVal * 1.5);
+      const drawY = y + Math.sin(flowAngle) * shift * (1.0 + pAudio * 4.5 + bassVal * 1.5);
 
       const dx = drawX - halfW;
       const dy = drawY - halfH;
@@ -244,37 +273,66 @@ function render(time) {
       const theta = rawTheta - rotationOffset;
 
       const r_super = superformula(theta, dynamicM, 1.0, 1.7, 1.7);
+      
+      // Turbulencia en los bordes alterada por la frecuencia individual
       const edgeTurbulence = perlin.noise2D(Math.cos(rawTheta) * 1.5, Math.sin(rawTheta) * 1.5 + runTime) * 0.08;
-      const finalSuperRadius = r_super * dynamicScale * (1.0 + edgeTurbulence * (1.0 + trebleVal * 2.4) + trebleVal * 0.55 + midVal * 0.35);
+      const finalSuperRadius = r_super * dynamicScale * (1.0 + edgeTurbulence * (1.0 + pAudio * 3.0) + pAudio * 0.6);
 
       const ratio = distance / finalSuperRadius;
 
       if (ratio > 1.25) continue;
 
+      // Factor Halftone adaptado a la intensidad de su frecuencia única
       let halftoneFactor = 0.0;
       if (ratio <= 0.8) {
-        halftoneFactor = mapRange(ratio, 0, 0.8, 1.0, 0.7) + fullVal * 1.45 + bassVal * 0.65;
+        halftoneFactor = mapRange(ratio, 0, 0.8, 1.0, 0.7) + pAudio * 1.8;
       } else {
-        halftoneFactor = mapRange(ratio, 0.8, 1.25, 0.7 + fullVal * 1.45 + bassVal * 0.65, 0.0);
+        halftoneFactor = mapRange(ratio, 0.8, 1.25, 0.7 + pAudio * 1.8, 0.0);
       }
 
       const radius = settings.minSize + Math.max(0, halftoneFactor) * settings.maxSize;
 
       if (radius > 0.5) {
-        let color;
-        if (ratio < 0.25) color = '#f9e356';      
-        else if (ratio < 0.55) color = '#ff5900'; 
-        else if (ratio < 0.85) color = '#ff0419'; 
-        else color = '#1e47fd'; // Corregido azul oscuro por Cyan para preservar la estética neón original
+  // ====================================================================
+  // NUEVA PALETA: DEGRADADO DE NARANJA A ROJO REACTIVO AL AUDIO POR PARTÍCULA
+  // ====================================================================
+  
+  // 1. Base del degradado concéntrico (Centro naranja, bordes rojos)
+  let baseHue = 42 - (Math.min(1.0, ratio) * 42);
 
-        ctx.beginPath();
-        ctx.arc(drawX, drawY, radius, 0, Math.PI * 2);
-        ctx.fillStyle = color;
+  // 2. Modulación por Audio (Chispazos amarillos con el ritmo)
+  let audioColorShift = pAudio * 35;
+
+  // 3. Evolución temporal cíclica sutil
+  let organicWave = Math.sin(runTime + audioIndex * 0.05) * 8;
+
+  // Cálculo del tono (Hue) final
+  let finalHue = baseHue + audioColorShift + organicWave;
+
+  // Construimos el string HSL (Saturación al 100% para modo Neón)
+  let color = `hsl(${finalHue}, 100%, 52%)`;
+
+  ctx.beginPath();
+  ctx.arc(drawX, drawY, radius, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  
+  // Brillo neón dinámico (Glow)
+  if (settings.glow > 0 && radius > 3) { 
+    ctx.shadowBlur = settings.glow * (0.5 + pAudio * 1.5);
+    ctx.shadowColor = color;
+  } else {
+    ctx.shadowColor = 'transparent';
+  }
+
+  ctx.fill();
+}
         
+        // Brillo neón dinámico (Glow) responsivo a la energía de la partícula
         if (settings.glow > 0 && radius > 3) { 
+          ctx.shadowBlur = settings.glow * (0.5 + pAudio * 1.5);
           ctx.shadowColor = color;
         } else {
-          ctx.shadowColor = 'transparent'; // Evita fugas de sombra en círculos pequeños
+          ctx.shadowColor = 'transparent';
         }
 
         ctx.fill();
@@ -282,11 +340,11 @@ function render(time) {
     }
   }
 
-  // CORRECCIÓN: El requestAnimationFrame y el reset de sombra van fuera del bucle anidado for
+  // Limpieza final de la sombra fuera de los bucles para optimizar CPU/GPU
   ctx.shadowBlur = 0; 
   ctx.shadowColor = 'transparent';
   requestAnimationFrame(render);
-}
 
-// Inicializar loop correctamente
+
+// Inicializar ciclo de renderizado
 requestAnimationFrame(render);
