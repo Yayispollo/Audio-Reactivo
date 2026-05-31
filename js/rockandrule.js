@@ -126,8 +126,6 @@ btnEnter.addEventListener('click', async () => {
     await audioCtx.resume();
   }
   
-  analyser.connect(audioCtx.destination);
-  
   welcomeModal.style.opacity = 0;
   setTimeout(() => {
     welcomeModal.style.display = 'none';
@@ -203,10 +201,8 @@ function render(time) {
     };
   }
 
-  // Modulaciones globales macro
   const bassVal = Math.pow(levels.bass, 0.7) * settings.sensitivity;
   const midVal = Math.pow(levels.mid, 0.7) * settings.sensitivity;
-  const trebleVal = Math.pow(levels.treble, 0.7) * settings.sensitivity;
   const fullVal = Math.pow(levels.full, 0.7) * settings.sensitivity;
 
   ctx.fillStyle = 'rgba(3, 3, 3, 0.16)';
@@ -223,12 +219,10 @@ function render(time) {
   const noiseScale = 0.012;
   const maxDisplacement = 60;
 
-  // Contadores para mapeo espacial de audio
   const totalColumns = Math.ceil(canvas.width / spacing);
   const totalRows = Math.ceil(canvas.height / spacing);
   let colCounter = 0;
 
-  // Bucle principal de la matriz Halftone
   for (let x = -spacing; x < canvas.width + spacing; x += spacing) {
     let rowCounter = 0;
     colCounter++;
@@ -242,7 +236,6 @@ function render(time) {
       
       if (aproxDist > dynamicScale * 1.6) continue;
 
-      // Asignación de frecuencia individual por coordenada espacial
       let particleAudioSample = 0;
       let audioIndex = 0;
 
@@ -250,7 +243,6 @@ function render(time) {
         const particleID = (colCounter * rowCounter) + rowCounter;
         const totalParticlesEst = totalColumns * totalRows;
         audioIndex = Math.floor((particleID / totalParticlesEst) * dataArray.length) % dataArray.length;
-        
         particleAudioSample = (dataArray[audioIndex] / 255) * settings.sensitivity;
       } else {
         particleAudioSample = (Math.sin(colCounter * 0.1 + runTime) * Math.cos(rowCounter * 0.1 + runTime) + 1) * 0.3;
@@ -259,7 +251,6 @@ function render(time) {
       
       const pAudio = Math.pow(particleAudioSample, 0.8);
 
-      // Desplazamiento orgánico controlado por ruido Perlin y audio frecuencial único
       const flowAngle = perlin.noise2D(x * noiseScale, y * noiseScale + runTime) * Math.PI * 2;
       const shift = perlin.noise2D(x * noiseScale + runTime, y * noiseScale) * maxDisplacement;
 
@@ -274,7 +265,6 @@ function render(time) {
 
       const r_super = superformula(theta, dynamicM, 1.0, 1.7, 1.7);
       
-      // Turbulencia en los bordes alterada por la frecuencia individual
       const edgeTurbulence = perlin.noise2D(Math.cos(rawTheta) * 1.5, Math.sin(rawTheta) * 1.5 + runTime) * 0.08;
       const finalSuperRadius = r_super * dynamicScale * (1.0 + edgeTurbulence * (1.0 + pAudio * 3.0) + pAudio * 0.6);
 
@@ -282,7 +272,6 @@ function render(time) {
 
       if (ratio > 1.25) continue;
 
-      // Factor Halftone adaptado a la intensidad de su frecuencia única
       let halftoneFactor = 0.0;
       if (ratio <= 0.8) {
         halftoneFactor = mapRange(ratio, 0, 0.8, 1.0, 0.7) + pAudio * 1.8;
@@ -293,41 +282,16 @@ function render(time) {
       const radius = settings.minSize + Math.max(0, halftoneFactor) * settings.maxSize;
 
       if (radius > 0.5) {
-  // ====================================================================
-  // NUEVA PALETA: DEGRADADO DE NARANJA A ROJO REACTIVO AL AUDIO POR PARTÍCULA
-  // ====================================================================
-  
-  // 1. Base del degradado concéntrico (Centro naranja, bordes rojos)
-  let baseHue = 42 - (Math.min(1.0, ratio) * 42);
+        let baseHue = 42 - (Math.min(1.0, ratio) * 42);
+        let audioColorShift = pAudio * 35;
+        let organicWave = Math.sin(runTime + audioIndex * 0.05) * 8;
+        let finalHue = baseHue + audioColorShift + organicWave;
+        let color = `hsl(${finalHue}, 100%, 52%)`;
 
-  // 2. Modulación por Audio (Chispazos amarillos con el ritmo)
-  let audioColorShift = pAudio * 35;
-
-  // 3. Evolución temporal cíclica sutil
-  let organicWave = Math.sin(runTime + audioIndex * 0.05) * 8;
-
-  // Cálculo del tono (Hue) final
-  let finalHue = baseHue + audioColorShift + organicWave;
-
-  // Construimos el string HSL (Saturación al 100% para modo Neón)
-  let color = `hsl(${finalHue}, 100%, 52%)`;
-
-  ctx.beginPath();
-  ctx.arc(drawX, drawY, radius, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  
-  // Brillo neón dinámico (Glow)
-  if (settings.glow > 0 && radius > 3) { 
-    ctx.shadowBlur = settings.glow * (0.5 + pAudio * 1.5);
-    ctx.shadowColor = color;
-  } else {
-    ctx.shadowColor = 'transparent';
-  }
-
-  ctx.fill();
-}
+        ctx.beginPath();
+        ctx.arc(drawX, drawY, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
         
-        // Brillo neón dinámico (Glow) responsivo a la energía de la partícula
         if (settings.glow > 0 && radius > 3) { 
           ctx.shadowBlur = settings.glow * (0.5 + pAudio * 1.5);
           ctx.shadowColor = color;
@@ -340,11 +304,10 @@ function render(time) {
     }
   }
 
-  // Limpieza final de la sombra fuera de los bucles para optimizar CPU/GPU
   ctx.shadowBlur = 0; 
   ctx.shadowColor = 'transparent';
   requestAnimationFrame(render);
-
+}
 
 // Inicializar ciclo de renderizado
 requestAnimationFrame(render);
